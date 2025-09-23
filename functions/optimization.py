@@ -1,4 +1,4 @@
-# version 1.0.0 by romangorbunov91
+# version 1.0.1 by romangorbunov91
 # 23-Sep-2025
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
@@ -46,6 +46,7 @@ def gauss_newton(X, y, w_init, tolerance):
     func_counter = 1
     
     grad_counter = 0
+    hess_counter = 0
     jacob_counter = 0
 
     for i in range(iteration_max):
@@ -57,6 +58,7 @@ def gauss_newton(X, y, w_init, tolerance):
         try:
             # Estimate Hessian via Jacobian.
             H_gn = J.T @ J
+            hess_counter += 1
             c, low = cho_factor(H_gn)
             g_gn = J.T @ r
             dw = cho_solve((c, low), -g_gn)
@@ -71,12 +73,11 @@ def gauss_newton(X, y, w_init, tolerance):
 
         if np.linalg.norm(dw) < tolerance:
             break
-    
-    hess_counter = 0    
+        
     return w, losses, i+1, func_counter, grad_counter, hess_counter, jacob_counter
 
 # Davidon–Fletcher–Powell.
-def dfp(X, y, w_init, tolerance):
+def DFP(X, y, w_init, tolerance):
     iteration_max = int(1e4)
     
     w = w_init.copy()
@@ -90,6 +91,8 @@ def dfp(X, y, w_init, tolerance):
     loss = loss_func(X, y, w)
     losses = [loss]
     func_counter = 1
+
+    hess_counter = 0
 
     # lr search parameters.
     lr_multiplier = 0.5
@@ -134,6 +137,7 @@ def dfp(X, y, w_init, tolerance):
             denom = np.dot(dgrad, Hdgrad)
             if abs(denom) > eps_zero:
                 H_inv += (np.outer(dw, dw) / dwdgrad - np.outer(Hdgrad, Hdgrad) / denom)
+                hess_counter += 1
             else:
                 print('Iteration', i+1, ': denominator near zero, skipping H_inv update.')
         else:
@@ -144,12 +148,11 @@ def dfp(X, y, w_init, tolerance):
         if np.linalg.norm(dw) < tolerance:
             break
         
-    hess_counter = 0
     jacob_counter = 0  
     return w, losses, i+1, func_counter, grad_counter, hess_counter, jacob_counter
 
 # Broyden–Fletcher–Goldfarb–Shanno.
-def bfgs(X, y, w_init, tolerance):
+def BFGS(X, y, w_init, tolerance):
     iteration_max = int(1e4)
     
     w = w_init.copy()
@@ -163,6 +166,8 @@ def bfgs(X, y, w_init, tolerance):
     loss = loss_func(X, y, w)
     losses = [loss]
     func_counter = 1
+
+    hess_counter = 0
 
     # lr search parameters.
     lr_multiplier = 0.5
@@ -208,6 +213,7 @@ def bfgs(X, y, w_init, tolerance):
             K_left = I - rho * np.outer(dw, dgrad)
             K_right = I - rho * np.outer(dgrad, dw)
             H_inv = K_left @ H_inv @ K_right + rho * np.outer(dw, dw)
+            hess_counter += 1
         else:
             print(f'Iteration {i+1}: Curvature condition violated (dw dgrad = {dwdgrad:.2e}) resetting H_inv to identity.')
             # Reset to identity.
@@ -216,6 +222,5 @@ def bfgs(X, y, w_init, tolerance):
         if np.linalg.norm(dw) < tolerance:
             break
         
-    hess_counter = 0
     jacob_counter = 0  
     return w, losses, i+1, func_counter, grad_counter, hess_counter, jacob_counter
