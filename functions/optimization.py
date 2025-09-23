@@ -1,4 +1,4 @@
-# version 0.3.3 by romangorbunov91
+# version 1.0.0 by romangorbunov91
 # 23-Sep-2025
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
@@ -97,25 +97,27 @@ def dfp(X, y, w_init, tolerance):
     eps_zero = 1e-10
 
     for i in range(iteration_max):
-        learning_rate = 1.0
         p = H_inv @ grad
         
+        learning_rate = 1.0
         dw = -learning_rate * p
         w_test = w + dw
-        new_loss = loss_func(X, y, w_test)
+        
+        loss_prev = loss.copy()
+        loss = loss_func(X, y, w_test)
         func_counter += 1
         
         grad_dot_dw = np.dot(grad, dw)
-        while ((loss - new_loss) < lr_coeff * learning_rate * grad_dot_dw) and (learning_rate > eps_zero):
+        while ((loss_prev - loss) < lr_coeff * learning_rate * grad_dot_dw) and (learning_rate > eps_zero):
             learning_rate *= lr_multiplier
             dw = -learning_rate * p
             w_test = w + dw
-            new_loss = loss_func(X, y, w_test)
+            loss = loss_func(X, y, w_test)
             func_counter += 1
         
         # Update.
         w = w_test.copy()
-        losses.append(new_loss)
+        losses.append(loss)
         
         grad_prev = grad.copy()
         grad = grad_func(X, y, w)
@@ -134,6 +136,78 @@ def dfp(X, y, w_init, tolerance):
                 H_inv += (np.outer(dw, dw) / dwdgrad - np.outer(Hdgrad, Hdgrad) / denom)
             else:
                 print('Iteration', i+1, ': denominator near zero, skipping H_inv update.')
+        else:
+            print(f'Iteration {i+1}: Curvature condition violated (dw dgrad = {dwdgrad:.2e}) resetting H_inv to identity.')
+            # Reset to identity.
+            H_inv = np.eye(len(w))
+
+        if np.linalg.norm(dw) < tolerance:
+            break
+        
+    hess_counter = 0
+    jacob_counter = 0  
+    return w, losses, i+1, func_counter, grad_counter, hess_counter, jacob_counter
+
+# Broyden–Fletcher–Goldfarb–Shanno.
+def bfgs(X, y, w_init, tolerance):
+    iteration_max = int(1e4)
+    
+    w = w_init.copy()
+    
+    # Initialize inverse Hessian.
+    H_inv = np.eye(len(w))
+    
+    grad = grad_func(X, y, w)
+    grad_counter = 1
+
+    loss = loss_func(X, y, w)
+    losses = [loss]
+    func_counter = 1
+
+    # lr search parameters.
+    lr_multiplier = 0.5
+    lr_coeff = 1e-4
+    eps_zero = 1e-10
+
+    for i in range(iteration_max):
+        p = H_inv @ grad
+        
+        learning_rate = 1.0
+        dw = -learning_rate * p
+        w_test = w + dw
+        
+        loss_prev = loss.copy()
+        loss = loss_func(X, y, w_test)
+        func_counter += 1
+        
+        grad_dot_dw = np.dot(grad, dw)
+        while ((loss_prev - loss) < lr_coeff * learning_rate * grad_dot_dw) and (learning_rate > eps_zero):
+            learning_rate *= lr_multiplier
+            dw = -learning_rate * p
+            w_test = w + dw
+            loss = loss_func(X, y, w_test)
+            func_counter += 1
+        
+        # Update.
+        w = w_test.copy()
+        losses.append(loss)
+        
+        grad_prev = grad.copy()
+        grad = grad_func(X, y, w)
+        grad_counter += 1
+        dgrad = grad - grad_prev        
+
+        # Curvature.
+        dwdgrad = np.dot(dw, dgrad)
+        
+        if dwdgrad > eps_zero:
+            # BFGS update:
+            # H_{k+1} = (I - ρ s y^T) H_k (I - ρ y s^T) + ρ s s^T, где ρ = 1/(y^T s)
+            rho = 1.0 / dwdgrad
+            I = np.eye(len(w))
+            K_left = I - rho * np.outer(dw, dgrad)
+            K_right = I - rho * np.outer(dgrad, dw)
+            H_inv = K_left @ H_inv @ K_right + rho * np.outer(dw, dw)
         else:
             print(f'Iteration {i+1}: Curvature condition violated (dw dgrad = {dwdgrad:.2e}) resetting H_inv to identity.')
             # Reset to identity.
