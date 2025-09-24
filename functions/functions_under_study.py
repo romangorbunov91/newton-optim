@@ -1,5 +1,5 @@
-# version 0.0.2 by romangorbunov91
-# 20-Sep-2025
+# version 1.0.0 by romangorbunov91
+# 24-Sep-2025
 
 import numpy as np
 

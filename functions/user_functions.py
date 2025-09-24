@@ -1,7 +1,6 @@
-# version 0.0.1 by romangorbunov91
-# 19-Sep-2025
+# version 1.0.0 by romangorbunov91
+# 24-Sep-2025
 
-import numpy as np
 import re
 
 def update_readme_section(tbl_df, readme_path, tbl_name, section):

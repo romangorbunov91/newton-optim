@@ -1,5 +1,6 @@
-# version 1.0.1 by romangorbunov91
-# 23-Sep-2025
+# version 1.0.2 by romangorbunov91
+# 24-Sep-2025
+
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 from functions.functions_under_study import predict, loss_func, grad_func, hess_func, jacob_func
@@ -8,6 +9,7 @@ def newton(X, y, w_init, tolerance):
     iteration_max = 1000
     
     w = w_init.copy()
+
     losses = [loss_func(X, y, w)]
     func_counter = 1
     
@@ -42,6 +44,7 @@ def gauss_newton(X, y, w_init, tolerance):
     iteration_max = 1000
     
     w = w_init.copy()
+
     losses = [loss_func(X, y, w)]
     func_counter = 1
     
@@ -81,16 +84,16 @@ def DFP(X, y, w_init, tolerance):
     iteration_max = int(1e4)
     
     w = w_init.copy()
-    
-    # Initialize inverse Hessian.
-    H_inv = np.eye(len(w))
-    
-    grad = grad_func(X, y, w)
-    grad_counter = 1
-
+ 
     loss = loss_func(X, y, w)
     losses = [loss]
     func_counter = 1
+
+    grad = grad_func(X, y, w)
+    grad_counter = 1
+
+    # Initialize inverse Hessian.
+    H_inv = np.eye(len(w))
 
     hess_counter = 0
 
@@ -156,17 +159,17 @@ def BFGS(X, y, w_init, tolerance):
     iteration_max = int(1e4)
     
     w = w_init.copy()
-    
-    # Initialize inverse Hessian.
-    H_inv = np.eye(len(w))
-    
-    grad = grad_func(X, y, w)
-    grad_counter = 1
-
+ 
     loss = loss_func(X, y, w)
     losses = [loss]
     func_counter = 1
 
+    grad = grad_func(X, y, w)
+    grad_counter = 1
+      
+    # Initialize inverse Hessian.
+    H_inv = np.eye(len(w))
+    
     hess_counter = 0
 
     # lr search parameters.
